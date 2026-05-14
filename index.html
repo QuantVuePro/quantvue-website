@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantVue — Algorithmic Stock Signals, Delivered to Telegram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #060a0d; --surface: #0b1014; --surface2: #101820;
+  --border: rgba(0,220,130,0.10); --border2: rgba(0,220,130,0.22);
+  --green: #00dc82; --green-dim: rgba(0,220,130,0.07);
+  --red: #ff4d4d; --red-dim: rgba(255,77,77,0.08);
+  --text: #dde8df; --text-muted: #4a6050; --text-mid: #7a9880;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'DM Sans', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,220,130,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,220,130,0.025) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; z-index: 0; }
+section, footer, .footer-disclaimer { position: relative; z-index: 1; }
+
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 52px; height: 64px; background: rgba(6,10,13,0.9); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+.nav-logo { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--green); letter-spacing: 0.06em; text-decoration: none; }
+.nav-logo span { color: var(--text-muted); }
+nav ul { list-style: none; display: flex; gap: 28px; }
+nav ul a { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
+nav ul a:hover { color: var(--green); }
+.nav-cta { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--bg) !important; background: var(--green); padding: 9px 22px; border-radius: 2px; text-decoration: none; letter-spacing: 0.05em; transition: opacity 0.2s; }
+.nav-cta:hover { opacity: 0.85; }
+
+#hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 48px 80px; text-align: center; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--green); background: var(--green-dim); border: 1px solid var(--border2); padding: 6px 16px; border-radius: 2px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px; }
+.hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.35;transform:scale(0.75);} }
+h1 { font-size: clamp(36px, 5.5vw, 74px); font-weight: 300; line-height: 1.1; letter-spacing: -0.02em; max-width: 920px; margin-bottom: 24px; }
+h1 strong { font-weight: 600; color: var(--green); }
+.hero-sub { font-size: 18px; color: var(--text-mid); max-width: 560px; margin: 0 auto 48px; font-weight: 300; line-height: 1.75; }
+.hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+.btn-primary { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--bg); background: var(--green); padding: 14px 32px; border-radius: 2px; text-decoration: none; letter-spacing: 0.04em; transition: opacity 0.2s, transform 0.15s; }
+.btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
+.btn-secondary { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--text-mid); border: 1px solid var(--border2); padding: 14px 32px; border-radius: 2px; text-decoration: none; letter-spacing: 0.04em; transition: border-color 0.2s, color 0.2s; }
+.btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+
+
+.inner { max-width: 1120px; margin: 0 auto; padding: 0 52px; }
+.section-label { font-family: var(--mono); font-size: 11px; color: var(--green); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 14px; }
+h2 { font-size: clamp(26px, 3.5vw, 44px); font-weight: 300; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 52px; }
+h2 strong { font-weight: 600; }
+
+#stats { padding: 0 52px 96px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 1120px; margin: 0 auto; }
+.stat-cell { background: var(--surface); padding: 38px 28px; position: relative; overflow: hidden; transition: background 0.2s; }
+.stat-cell:hover { background: var(--surface2); }
+.stat-cell::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+.stat-cell:hover::after { transform: scaleX(1); }
+.stat-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+.stat-value { font-family: var(--mono); font-size: 38px; font-weight: 600; color: var(--green); line-height: 1; margin-bottom: 6px; }
+.stat-value.sm { font-size: 22px; line-height: 1.2; }
+.stat-desc { font-size: 13px; color: var(--text-muted); }
+
+#how { padding: 96px 0; }
+.steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.step { background: var(--bg); padding: 40px 32px; }
+.step-num { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 20px; }
+.step-icon { font-size: 22px; margin-bottom: 16px; }
+.step h3 { font-size: 17px; font-weight: 500; margin-bottom: 10px; }
+.step p { font-size: 14px; color: var(--text-mid); line-height: 1.75; }
+
+#algos { padding: 96px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.algo-intro { font-size: 15px; color: var(--text-mid); max-width: 640px; margin-bottom: 44px; line-height: 1.75; }
+.algo-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 28px; }
+.algo-card { background: var(--bg); padding: 30px 28px; position: relative; overflow: hidden; transition: background 0.2s; }
+.algo-card:hover { background: var(--surface2); }
+.algo-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--green); opacity: 0; transition: opacity 0.3s; }
+.algo-card:hover::before { opacity: 1; }
+.algo-name { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 8px; }
+.algo-desc { font-size: 13px; color: var(--text-mid); line-height: 1.7; margin-bottom: 14px; }
+.algo-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.algo-tag { font-family: var(--mono); font-size: 10px; color: var(--text-muted); border: 1px solid var(--border2); padding: 3px 8px; border-radius: 2px; letter-spacing: 0.06em; }
+.algo-note { font-family: var(--mono); font-size: 12px; color: var(--text-muted); text-align: center; border: 1px dashed var(--border2); padding: 14px; letter-spacing: 0.04em; }
+
+#signals { padding: 96px 0; }
+.signal-intro { font-size: 15px; color: var(--text-mid); max-width: 680px; margin-bottom: 56px; line-height: 1.75; }
+
+/* ── iPhone shell ── */
+.phones-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-bottom: 32px; align-items: start; }
+.phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.iphone { width: 100%; max-width: 320px; background: #111; border-radius: 44px; padding: 10px; box-shadow: 0 0 0 1px #2a2a2a, 0 0 0 3px #111, 0 0 0 4.5px #3a3a3a, 0 24px 48px rgba(0,0,0,0.5); position: relative; }
+.iphone-dynamic-island { width: 90px; height: 28px; background: #111; border-radius: 20px; margin: 0 auto 10px; }
+.iphone-screen { background: #121416; border-radius: 34px; overflow: hidden; }
+
+/* status bar */
+.tg-sb { background: #121416; padding: 10px 20px 5px; display: flex; justify-content: space-between; align-items: center; }
+.tg-sb-time { font-size: 13px; font-weight: 700; color: #fff; font-family: var(--sans); letter-spacing: -0.3px; }
+.tg-sb-right { display: flex; align-items: center; gap: 4px; }
+.tg-sb-right svg { fill: #fff; }
+
+/* top nav bar */
+.tg-nav { background: #1c1f22; padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.tg-nav-back { color: #4fa3e0; font-size: 13px; font-family: var(--sans); font-weight: 500; }
+.tg-nav-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+.tg-nav-avatar.tqqq { background: linear-gradient(135deg,#1565c0,#42a5f5); }
+.tg-nav-avatar.tecl { background: linear-gradient(135deg,#1b5e20,#66bb6a); }
+.tg-nav-avatar.stb  { background: linear-gradient(135deg,#4a148c,#ab47bc); }
+.tg-nav-info { flex: 1; }
+.tg-nav-name { font-size: 13px; font-weight: 600; color: #fff; font-family: var(--sans); line-height: 1.2; }
+.tg-nav-sub { font-size: 11px; color: #6b7280; font-family: var(--sans); }
+.tg-nav-icons { display: flex; gap: 10px; color: #4fa3e0; font-size: 16px; }
+
+/* chat area */
+.tg-chat { background: #0e1621; padding: 8px 8px 4px; display: flex; flex-direction: column; gap: 4px; height: 480px; overflow: hidden; }
+.tg-date-pill { text-align: center; margin: 5px 0; }
+.tg-date-pill span { background: rgba(255,255,255,0.1); color: #a0aec0; font-size: 10px; padding: 2px 10px; border-radius: 8px; font-family: var(--sans); }
+.tg-bubble { background: #182533; border-radius: 14px 14px 14px 3px; padding: 8px 11px 5px; max-width: 94%; }
+.tg-bubble-sender { font-size: 11px; font-weight: 700; margin-bottom: 3px; font-family: var(--sans); }
+.tg-bubble-sender.tqqq { color: #42a5f5; }
+.tg-bubble-sender.tecl { color: #66bb6a; }
+.tg-bubble-sender.stb  { color: #ab47bc; }
+.tg-bubble-text { font-size: 13px; color: #e2e8f0; font-family: var(--sans); line-height: 1.4; display: flex; align-items: center; gap: 6px; }
+.tg-bubble-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tg-bubble-dot.buy  { background: #4caf50; }
+.tg-bubble-dot.sell { background: #f44336; }
+.tg-bubble-action.buy  { color: #4caf50; font-weight: 700; }
+.tg-bubble-action.sell { color: #f44336; font-weight: 700; }
+.tg-bubble-footer { display: flex; justify-content: flex-end; align-items: center; gap: 3px; margin-top: 3px; }
+.tg-bubble-time { font-size: 10px; color: #4a5568; font-family: var(--sans); }
+.tg-bubble-read { color: #4fa3e0; font-size: 10px; }
+
+.phone-label { font-family: var(--mono); font-size: 11px; color: var(--green); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+.phone-label span { display: block; font-size: 10px; color: var(--text-muted); letter-spacing: 0.04em; margin-top: 3px; text-transform: none; }
+
+.signals-note { font-family: var(--mono); font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; padding: 13px 18px; border: 1px solid var(--border); border-left: 3px solid var(--green); background: var(--green-dim); letter-spacing: 0.04em; }
+
+@media (max-width: 960px) { .phones-row { grid-template-columns: 1fr; } .iphone { max-width: 320px; } }
+
+#trades { padding: 96px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+.rt-group { margin-bottom: 32px; }
+.rt-group:last-child { margin-bottom: 0; }
+.rt-group-header { display: flex; align-items: center; gap: 16px; padding: 13px 20px; background: var(--surface2); border: 1px solid var(--border); border-bottom: none; }
+.rt-group-name { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 0.06em; }
+.rt-group-count { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.rt-wrap { border: 1px solid var(--border); overflow: hidden; }
+.rt-header { display: grid; grid-template-columns: 80px 1fr 1fr 90px 110px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.rt-header span { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.13em; text-transform: uppercase; padding: 10px 16px; }
+.rt-row { display: grid; grid-template-columns: 80px 1fr 1fr 90px 110px; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg); transition: background 0.15s; }
+.rt-row:hover { background: var(--surface2); }
+.rt-row:last-child { border-bottom: none; }
+.rt-sym { padding: 13px 16px; font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text); }
+.rt-buy { padding: 13px 16px; font-family: var(--mono); font-size: 13px; }
+.rt-buy .label { color: var(--green); font-weight: 600; margin-right: 6px; }
+.rt-buy .val { color: var(--text-mid); }
+.rt-sell { padding: 13px 16px; font-family: var(--mono); font-size: 13px; }
+.rt-sell .label { color: var(--red); font-weight: 600; margin-right: 6px; }
+.rt-sell .val { color: var(--text-mid); }
+.rt-sell .pending { color: var(--text-muted); font-style: italic; }
+.rt-pnl { padding: 13px 16px; font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.rt-pnl.profit { color: var(--green); }
+.rt-pnl.loss { color: var(--red); }
+.rt-pnl.open { color: var(--text-muted); font-size: 11px; font-weight: 400; letter-spacing: 0.06em; }
+.rt-date { padding: 13px 16px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+.show-more-btn { margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); background: transparent; border: 1px solid var(--border); padding: 10px 24px; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.2s; display: block; width: 100%; }
+.show-more-btn:hover { border-color: var(--green); color: var(--green); }
+
+@media (max-width: 960px) {
+  .rt-header, .rt-row { grid-template-columns: 60px 1fr 1fr 70px; }
+  .rt-date { display: none; }
+}
+
+#pricing { padding: 96px 0; }
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 820px; margin: 0 auto; }
+.plan { background: var(--surface); padding: 46px 38px; }
+.plan.featured { background: var(--surface2); border-left: 3px solid var(--green); }
+.plan-badge { font-family: var(--mono); font-size: 10px; background: var(--green); color: var(--bg); padding: 4px 10px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; display: inline-block; margin-bottom: 22px; }
+.plan-name { font-family: var(--mono); font-size: 12px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+.plan-price { font-family: var(--mono); font-size: 44px; font-weight: 600; color: var(--text); line-height: 1; margin-bottom: 6px; }
+.plan-price sup { font-size: 20px; vertical-align: top; margin-top: 8px; color: var(--text-mid); }
+.plan-price sub { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+.plan-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 26px; line-height: 1.65; }
+.plan-features { list-style: none; margin-bottom: 32px; }
+.plan-features li { font-size: 13px; color: var(--text-mid); padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.plan-features li::before { content: '—'; color: var(--text-muted); font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
+.plan-features li.yes::before { content: '✓'; color: var(--green); font-size: 12px; }
+
+#social { padding: 96px 0; border-top: 1px solid var(--border); }
+.social-row { display: flex; align-items: flex-start; gap: 64px; }
+.social-text { flex: 1; }
+.social-text p { font-size: 15px; color: var(--text-mid); line-height: 1.8; margin-bottom: 18px; }
+.social-mockup { flex: 0 0 300px; }
+.insta-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.insta-header { padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.insta-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; font-weight: 600; color: white; flex-shrink: 0; }
+.insta-handle { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+.insta-sub-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+.insta-results { padding: 14px; }
+.insta-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.insta-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 12px; }
+.insta-row:last-child { border-bottom: none; }
+.i-sym { color: var(--text); font-weight: 600; }
+.i-badge { font-size: 10px; padding: 2px 7px; border-radius: 2px; }
+.i-badge.buy { color: var(--green); background: var(--green-dim); border: 1px solid rgba(0,220,130,0.2); }
+.i-badge.sell { color: var(--red); background: var(--red-dim); border: 1px solid rgba(255,77,77,0.2); }
+.i-pnl { font-weight: 600; color: var(--green); }
+
+#testimonials { padding: 96px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.reviews-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.review { background: var(--bg); padding: 34px 26px; }
+.review-quote { font-size: 14px; color: var(--text-mid); line-height: 1.8; margin-bottom: 22px; }
+.review-quote::before { content: '"'; color: var(--green); font-size: 22px; font-family: Georgia, serif; }
+.review-author strong { color: var(--text); display: block; font-size: 14px; margin-bottom: 2px; }
+.review-author { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+#cta { padding: 120px 48px; text-align: center; }
+#cta h2 { margin-bottom: 16px; }
+#cta p { color: var(--text-mid); font-size: 16px; margin-bottom: 40px; max-width: 500px; margin-left: auto; margin-right: auto; }
+.whop-btn { display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--bg); background: var(--green); padding: 18px 48px; border-radius: 2px; text-decoration: none; letter-spacing: 0.04em; transition: opacity 0.2s, transform 0.15s; }
+.whop-btn:hover { opacity: 0.87; transform: translateY(-2px); }
+.cta-note { margin-top: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
+
+footer { border-top: 1px solid var(--border); padding: 26px 52px; display: flex; justify-content: space-between; align-items: center; }
+.footer-logo { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+.footer-links { display: flex; gap: 22px; list-style: none; }
+.footer-links a { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-decoration: none; letter-spacing: 0.08em; transition: color 0.2s; }
+.footer-links a:hover { color: var(--green); }
+.footer-disclaimer { font-size: 11px; color: var(--text-muted); text-align: center; padding: 0 52px 22px; line-height: 1.65; }
+
+.fade-in { opacity: 0; transform: translateY(18px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 960px) {
+  nav { padding: 0 20px; }
+  nav ul { display: none; }
+  .inner, #stats, #cta { padding-left: 20px; padding-right: 20px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .steps, .algo-grid { grid-template-columns: 1fr; }
+  .tg-feed { grid-template-columns: 1fr; }
+  .plans { grid-template-columns: 1fr; }
+  .reviews-grid { grid-template-columns: 1fr; }
+  .social-row { flex-direction: column; gap: 28px; }
+  .social-mockup { flex: none; width: 100%; max-width: 340px; }
+  footer { flex-direction: column; gap: 14px; text-align: center; padding: 20px; }
+  .footer-disclaimer { padding: 0 20px 18px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#hero">QUANT<span>VUE</span></a>
+  <ul>
+    <li><a href="#signals">Signals</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#social">Instagram</a></li>
+  </ul>
+  <a class="nav-cta" href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank">Join Now →</a>
+</nav>
+
+<section id="hero">
+  <div class="hero-badge">Signals Sent Automatically In Real-Time</div>
+  <h1>Algorithmic signals.<br><strong>Direct to our Telegram channels.</strong></h1>
+  <p class="hero-sub">Multiple trading algorithms, one membership. Get live buy &amp; sell signals sent automatically to our private Telegram channels — the moment an algo fires.</p>
+  <div class="hero-btns">
+    <a href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Join QuantVue Now
+    </a>
+  </div>
+</section>
+
+<section id="stats">
+  <div class="stats-grid fade-in">
+    <div class="stat-cell">
+      <div class="stat-label">Algorithms Running</div>
+      <div class="stat-value">3</div>
+      <div class="stat-desc">All included in one membership</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Signal Delivery</div>
+      <div class="stat-value sm">Real-Time</div>
+      <div class="stat-desc">Fires only when conditions are met — never forced</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Delivery Speed</div>
+      <div class="stat-value">&lt;1s</div>
+      <div class="stat-desc">Signal hits Telegram instantly</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Access</div>
+      <div class="stat-value">1 Price</div>
+      <div class="stat-desc">All algos, all channels</div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="inner">
+    <div class="section-label">// How It Works</div>
+    <h2>Automated signals,<br><strong>start to finish</strong></h2>
+    <div class="steps fade-in">
+      <div class="step">
+        <div class="step-num">01 —</div>
+        <div class="step-icon">⚙️</div>
+        <h3>Algorithm Runs</h3>
+        <p>Each algorithm continuously monitors its target instrument — scanning price action, volume, and mean reversion conditions throughout the live trading session.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 —</div>
+        <div class="step-icon">⚡</div>
+        <h3>Signal Generated</h3>
+        <p>When conditions are met, a BUY or SELL signal fires instantly with the exact entry price — fully automated, zero manual intervention or delay.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 —</div>
+        <div class="step-icon">📲</div>
+        <h3>Telegram Delivery</h3>
+        <p>The signal is posted to our private QuantVue Telegram channel within one second. Each algo has its own channel — subscribe once and you're added to all of them automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="signals">
+  <div class="inner">
+    <div class="section-label">// Live Signal Format</div>
+    <h2>What signals look like<br><strong>in our Telegram channels</strong></h2>
+    <p class="signal-intro">Each algorithm has its own private QuantVue Telegram channel. Subscribe once and you're added to all of them. The moment an algo fires, the exact signal appears — automatically, in real-time.</p>
+
+    <div class="phones-row fade-in">
+
+      <!-- TQQQ Mean Reversion -->
+      <div class="phone-wrap">
+        <div class="iphone">
+          <div class="iphone-dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="tg-sb"><span class="tg-sb-time">9:41</span><div class="tg-sb-right"><span style="color:#fff;font-size:10px;font-family:sans-serif;">▲ 5G ▊</span></div></div>
+            <div class="tg-nav">
+              <span class="tg-nav-back">‹</span>
+              <div class="tg-nav-avatar tqqq">TQ</div>
+              <div class="tg-nav-info">
+                <div class="tg-nav-name">TQQQ Mean Reversion</div>
+              </div>
+              <div class="tg-nav-icons">⋮</div>
+            </div>
+            <div class="tg-chat">
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TQQQ @ $57.88</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 22</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TQQQ @ $60.10</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;UVXY @ $39.35</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 23</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;UVXY @ $39.04</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TQQQ @ $59.10</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 24</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TQQQ @ $62.46</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tqqq">TQQQ Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;UVXY @ $39.79</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:53 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">TQQQ Mean Reversion<span>Private Telegram channel</span></div>
+      </div>
+
+      <!-- TECL Mean Reversion -->
+      <div class="phone-wrap">
+        <div class="iphone">
+          <div class="iphone-dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="tg-sb"><span class="tg-sb-time">9:41</span><div class="tg-sb-right"><span style="color:#fff;font-size:10px;font-family:sans-serif;">▲ 5G ▊</span></div></div>
+            <div class="tg-nav">
+              <span class="tg-nav-back">‹</span>
+              <div class="tg-nav-avatar tecl">TC</div>
+              <div class="tg-nav-info">
+                <div class="tg-nav-name">TECL Mean Reversion</div>
+              </div>
+              <div class="tg-nav-icons">⋮</div>
+            </div>
+            <div class="tg-chat">
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TECL @ $142.20</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 29</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TECL @ $144.37</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;BIL @ $91.64</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 30</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;BIL @ $91.64</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TECL @ $146.09</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>May 5</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TECL @ $162.51</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender tecl">TECL Mean Reversion</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;BIL @ $91.42</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:56 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">TECL Mean Reversion<span>Private Telegram channel</span></div>
+      </div>
+
+      <!-- StocksToBuy -->
+      <div class="phone-wrap">
+        <div class="iphone">
+          <div class="iphone-dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="tg-sb"><span class="tg-sb-time">9:41</span><div class="tg-sb-right"><span style="color:#fff;font-size:10px;font-family:sans-serif;">▲ 5G ▊</span></div></div>
+            <div class="tg-nav">
+              <span class="tg-nav-back">‹</span>
+              <div class="tg-nav-avatar stb">ST</div>
+              <div class="tg-nav-info">
+                <div class="tg-nav-name">StocksToBuy</div>
+              </div>
+              <div class="tg-nav-icons">⋮</div>
+            </div>
+            <div class="tg-chat">
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TQQQ @ $38.66</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:50 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;UPRO @ $90.06</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:50 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>March 30</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot buy"></span><span class="tg-bubble-action buy">BUY</span>&nbsp;TECL @ $76.26</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">2:50 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 17</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;UPRO @ $126.20</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">12:01 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>April 24</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TQQQ @ $62.47</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">12:01 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+              <div class="tg-date-pill"><span>May 5</span></div>
+              <div class="tg-bubble">
+                <div class="tg-bubble-sender stb">StocksToBuy</div>
+                <div class="tg-bubble-text"><span class="tg-bubble-dot sell"></span><span class="tg-bubble-action sell">SELL</span>&nbsp;TECL @ $163.27</div>
+                <div class="tg-bubble-footer"><span class="tg-bubble-time">12:01 PM</span><span class="tg-bubble-read">✓✓</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">StocksToBuy<span>Private Telegram channel</span></div>
+      </div>
+
+    </div>
+    <div class="signals-note fade-in">⚡ &nbsp;Signals are sent automatically in real-time — the moment an algorithm triggers, the exact entry price is posted to our QuantVue Telegram channel.</div>
+  </div>
+</section>
+
+<section id="trades" style="display:none">
+  <div class="inner">
+    <div class="section-label">// Trade History</div>
+    <h2>Every completed trade.<br><strong>Buy in, sell out, result.</strong></h2>
+    <div id="rt-body"></div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="inner">
+    <div class="section-label">// Membership</div>
+    <h2>Everything included.<br><strong>One simple price.</strong></h2>
+    <div class="plans fade-in">
+      <div class="plan">
+        <div class="plan-name">Free Preview</div>
+        <div class="plan-price"><sup>$</sup>0<sub>/mo</sub></div>
+        <div class="plan-desc">Follow us on Instagram to see real results, trade recaps, and algo performance before you commit to a subscription.</div>
+        <ul class="plan-features">
+          <li class="yes">Instagram trade results</li>
+          <li class="yes">Public performance recaps</li>
+          <li class="yes">Algo announcements</li>
+          <li>Live Telegram signals</li>
+          <li>Access to all algo channels</li>
+          <li>Real-time entries &amp; exits</li>
+          <li>New algo access on launch</li>
+        </ul>
+        <a href="https://www.instagram.com/quantvuepro/" target="_blank" class="btn-secondary">Follow on Instagram →</a>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge">Full Access</div>
+        <div class="plan-name">QuantVue Pro</div>
+        <div class="plan-price"><sup>$</sup>14.99<sub>/mo</sub></div>
+        <div class="plan-desc">All algorithms, all channels, all signals in real-time. One price, everything included. Cancel anytime through Whop.</div>
+        <ul class="plan-features">
+          <li class="yes">All algo Telegram channels</li>
+          <li class="yes">Real-time buy &amp; sell signals</li>
+          <li class="yes">Exact entry prices, auto-sent</li>
+          <li class="yes">New algorithms included free</li>
+          <li class="yes">Cancel anytime via Whop</li>
+        </ul>
+        <a href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank" class="btn-primary">Join on Whop →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="social">
+  <div class="inner">
+    <div class="section-label">// Follow Our Results</div>
+    <h2>We post every trade<br><strong>publicly on Instagram</strong></h2>
+    <div class="social-row fade-in">
+      <div class="social-text">
+        <p>Every trade, every result — posted publicly on our Instagram. No cherry-picking, no hidden losses. See the full picture before you ever subscribe.</p>
+        <p>Follow <strong style="color:var(--text)">@quantvuepro</strong> for real-time results, algorithm performance recaps, and trade-by-trade breakdowns across all our algos.</p>
+        <a href="https://www.instagram.com/quantvuepro/" target="_blank" class="btn-primary" style="margin-top:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          Follow @quantvuepro
+        </a>
+      </div>
+      <div class="social-mockup">
+        <div class="insta-card">
+          <div class="insta-header">
+            <div class="insta-avatar">Q</div>
+            <div><div class="insta-handle">@quantvuepro</div><div class="insta-sub-label">Recent trade recap post</div></div>
+          </div>
+          <div class="insta-results">
+            <div class="insta-label">📊 Recent Trades</div>
+            <div class="insta-row"><span class="i-sym">TECL</span><span class="i-badge buy">Buy</span><span style="color:var(--text-mid);font-size:11px;">@ $91.46</span><span class="i-pnl">+5.6%</span></div>
+            <div class="insta-row"><span class="i-sym">TQQQ</span><span class="i-badge buy">Buy</span><span style="color:var(--text-mid);font-size:11px;">@ $44.94</span><span class="i-pnl">+18.1%</span></div>
+            <div class="insta-row"><span class="i-sym">SQQQ</span><span class="i-badge sell">Sell</span><span style="color:var(--text-mid);font-size:11px;">@ $87.52</span><span class="i-pnl">+10.5%</span></div>
+            <div class="insta-row"><span class="i-sym">TLT</span><span class="i-badge buy">Buy</span><span style="color:var(--text-mid);font-size:11px;">@ $86.80</span><span class="i-pnl">+0.1%</span></div>
+            <div class="insta-row"><span class="i-sym">TQQQ</span><span class="i-badge sell">Sell</span><span style="color:var(--text-mid);font-size:11px;">@ $56.38</span><span class="i-pnl">+17.9%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="cta">
+  <div class="section-label">// Get Started</div>
+  <h2>Ready to receive signals<br><strong>in real-time?</strong></h2>
+  <p>Join QuantVue Pro on Whop and get instant access to all algorithm channels. Cancel anytime.</p>
+  <a href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank" class="whop-btn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    Join QuantVue Pro on Whop
+  </a>
+  <div class="cta-note">Powered by Whop · Secure payment · Cancel anytime</div>
+</section>
+
+<footer>
+  <div class="footer-logo">QUANTVUE © 2025</div>
+  <ul class="footer-links">
+    <li><a href="#">Terms</a></li>
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Disclaimer</a></li>
+    <li><a href="https://www.instagram.com/quantvuepro/" target="_blank">Instagram</a></li>
+    <li><a href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank">Join</a></li>
+  </ul>
+</footer>
+<p class="footer-disclaimer">Trading involves significant risk of loss and is not suitable for all investors. Past signal performance is not indicative of future results. QuantVue provides algorithmic trade signals for educational and informational purposes only — this is not financial advice. Always conduct your own research and consult a qualified financial advisor before trading.</p>
+
+<script>
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, {threshold: 0.08});
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+
+// Each trade is one completed round-trip: sym, buy price + date, sell price + date.
+// Set sellPrice: null and sellDate: null for open/pending trades.
+const ALGOS = [
+  {
+    name: 'TQQQ Mean Reversion',
+    trades: [
+      { sym:'TQQQ', buyPrice:74.98, buyDate:'May 12, 2025', sellPrice:77.12, sellDate:'May 13, 2025' },
+      { sym:'UVXY', buyPrice:36.88, buyDate:'May 13, 2025', sellPrice:null,  sellDate:null           },
+      { sym:'UVXY', buyPrice:37.60, buyDate:'May 5, 2025',  sellPrice:35.42, sellDate:'May 12, 2025' },
+      { sym:'TQQQ', buyPrice:60.81, buyDate:'Apr 28, 2025', sellPrice:67.29, sellDate:'May 5, 2025'  },
+      { sym:'UVXY', buyPrice:39.79, buyDate:'Apr 24, 2025', sellPrice:36.84, sellDate:'Apr 28, 2025' },
+      { sym:'TQQQ', buyPrice:59.10, buyDate:'Apr 23, 2025', sellPrice:62.46, sellDate:'Apr 24, 2025' },
+      { sym:'UVXY', buyPrice:39.04, buyDate:'Apr 23, 2025', sellPrice:39.79, sellDate:'Apr 24, 2025' },
+    ]
+  },
+  {
+    name: 'TECL Mean Reversion',
+    trades: [
+      { sym:'TECL', buyPrice:191.56, buyDate:'May 12, 2025', sellPrice:196.99, sellDate:'May 13, 2025' },
+      { sym:'BIL',  buyPrice:91.50,  buyDate:'May 13, 2025', sellPrice:null,   sellDate:null           },
+      { sym:'BIL',  buyPrice:91.42,  buyDate:'May 5, 2025',  sellPrice:91.48,  sellDate:'May 12, 2025' },
+      { sym:'TECL', buyPrice:146.09, buyDate:'Apr 30, 2025', sellPrice:162.51, sellDate:'May 5, 2025'  },
+      { sym:'BIL',  buyPrice:91.64,  buyDate:'Apr 29, 2025', sellPrice:91.64,  sellDate:'Apr 30, 2025' },
+      { sym:'TECL', buyPrice:142.20, buyDate:'Apr 28, 2025', sellPrice:144.37, sellDate:'Apr 29, 2025' },
+      { sym:'BIL',  buyPrice:91.63,  buyDate:'Apr 28, 2025', sellPrice:91.64,  sellDate:'Apr 29, 2025' },
+    ]
+  },
+  {
+    name: 'StocksToBuy',
+    trades: [
+      { sym:'TECL', buyPrice:178.65, buyDate:'May 12, 2025', sellPrice:206.53, sellDate:'May 14, 2025' },
+      { sym:'TQQQ', buyPrice:71.80,  buyDate:'May 12, 2025', sellPrice:77.46,  sellDate:'May 13, 2025' },
+      { sym:'TECL', buyPrice:76.26,  buyDate:'Mar 30, 2025', sellPrice:163.27, sellDate:'May 5, 2025'  },
+      { sym:'TQQQ', buyPrice:38.66,  buyDate:'Mar 30, 2025', sellPrice:62.47,  sellDate:'Apr 24, 2025' },
+      { sym:'UPRO', buyPrice:90.06,  buyDate:'Mar 30, 2025', sellPrice:126.20, sellDate:'Apr 17, 2025' },
+    ]
+  }
+];
+
+function renderTrades() {
+  const body = document.getElementById('rt-body');
+  body.innerHTML = ALGOS.map(algo => {
+    const sorted = [...algo.trades].sort((a, b) => {
+      if (!a.sellPrice && b.sellPrice) return -1;
+      if (a.sellPrice && !b.sellPrice) return 1;
+      if (!a.sellPrice && !b.sellPrice) return new Date(b.buyDate) - new Date(a.buyDate);
+      return new Date(b.sellDate) - new Date(a.sellDate);
+    });
+    const rows = sorted.map(t => {
+      const closed = t.sellPrice !== null;
+      const pct = closed ? ((t.sellPrice - t.buyPrice) / t.buyPrice * 100) : null;
+      const pnlStr = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : 'Open';
+      const pnlClass = pct === null ? 'open' : pct >= 0 ? 'profit' : 'loss';
+      return `
+        <div class="rt-row">
+          <div class="rt-sym">${t.sym}</div>
+          <div class="rt-buy"><span class="label">Buy</span><span class="val">$${t.buyPrice.toFixed(2)}</span></div>
+          <div class="rt-sell"><span class="label">Sell</span>${closed ? `<span class="val">$${t.sellPrice.toFixed(2)}</span>` : `<span class="pending">pending</span>`}</div>
+          <div class="rt-pnl ${pnlClass}">${pnlStr}</div>
+          <div class="rt-date">${t.sellDate || t.buyDate}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="rt-group fade-in">
+        <div class="rt-group-header">
+          <span class="rt-group-name">${algo.name}</span>
+          <span class="rt-group-count">${algo.trades.length} trades</span>
+        </div>
+        <div class="rt-wrap">
+          <div class="rt-header">
+            <span>Symbol</span>
+            <span>Buy</span>
+            <span>Sell</span>
+            <span>Result</span>
+            <span>Date</span>
+          </div>
+          ${rows}
+        </div>
+      </div>`;
+  }).join('');
+
+  body.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+}
+
+renderTrades();
+
+
+
+
+</script>
+</body>
+</html>
