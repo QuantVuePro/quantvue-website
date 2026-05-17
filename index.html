@@ -241,6 +241,25 @@ footer { border-top: 1px solid var(--border); padding: 26px 52px; display: flex;
 .follow-callout-text strong { color: var(--text); font-weight: 500; }
 
 @media (max-width: 960px) { .follow-story { grid-template-columns: 1fr; } }
+
+/* ── BACKTEST ── */
+#backtest { padding: 96px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.backtest-intro { font-size: 15px; color: var(--text-mid); max-width: 640px; margin-bottom: 48px; line-height: 1.75; }
+.backtest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 24px; }
+.backtest-card { background: var(--bg); padding: 36px 32px; position: relative; overflow: hidden; transition: background 0.2s; }
+.backtest-card:hover { background: var(--surface2); }
+.backtest-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+.backtest-card:hover::after { transform: scaleX(1); }
+.backtest-algo { font-family: var(--mono); font-size: 11px; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+.backtest-return { font-family: var(--mono); font-size: 52px; font-weight: 600; color: var(--text); line-height: 1; margin-bottom: 4px; }
+.backtest-return span { font-size: 28px; color: var(--green); }
+.backtest-label { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+.backtest-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+.backtest-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); line-height: 1.8; }
+.backtest-meta span { color: var(--text-mid); }
+.backtest-disclaimer { font-family: var(--mono); font-size: 11px; color: var(--text-muted); line-height: 1.7; padding: 16px 20px; border: 1px solid var(--border); border-left: 3px solid var(--text-muted); background: rgba(255,255,255,0.02); letter-spacing: 0.02em; }
+@media (max-width: 960px) { .backtest-grid { grid-template-columns: 1fr; } }
+
 #faq { padding: 96px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .faq-list { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); }
 .faq-item { background: var(--bg); }
@@ -279,6 +298,7 @@ footer { border-top: 1px solid var(--border); padding: 26px 52px; display: flex;
   <ul>
     <li><a href="#signals">Signals</a></li>
     <li><a href="#how">How It Works</a></li>
+    <li><a href="#backtest">Performance</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#faq">FAQ</a></li>
     <li><a href="#social">Instagram</a></li>
@@ -326,6 +346,50 @@ footer { border-top: 1px solid var(--border); padding: 26px 52px; display: flex;
 
 
 
+
+<section id="backtest">
+  <div class="inner">
+    <div class="section-label">// Backtested Performance</div>
+    <h2>The numbers<br><strong>behind the algorithms.</strong></h2>
+    <p class="backtest-intro">Each algorithm has been backtested on third-party platforms. These are the annualised returns across each strategy's tested period.</p>
+
+    <div class="backtest-grid fade-in">
+
+      <div class="backtest-card">
+        <div class="backtest-algo">TQQQ Mean Reversion</div>
+        <div class="backtest-return">181<span>.6%</span></div>
+        <div class="backtest-label">Annualised return since 2012</div>
+        <div class="backtest-divider"></div>
+        <div class="backtest-meta">
+          Type <span>Mean Reversion · Leveraged ETF</span><br>
+          Last 3yr annualised <span>97.5%</span>
+        </div>
+      </div>
+
+      <div class="backtest-card">
+        <div class="backtest-algo">TECL Mean Reversion</div>
+        <div class="backtest-return">271<span>.1%</span></div>
+        <div class="backtest-label">Annualised return since 2021</div>
+        <div class="backtest-divider"></div>
+        <div class="backtest-meta">
+          Type <span>Mean Reversion · Tech Sector ETF</span>
+        </div>
+      </div>
+
+      <div class="backtest-card">
+        <div class="backtest-algo">StocksToBuy</div>
+        <div class="backtest-return">38<span>.8%</span></div>
+        <div class="backtest-label">Annualised return over 5 years</div>
+        <div class="backtest-divider"></div>
+        <div class="backtest-meta">
+          Type <span>Momentum · Multi-instrument</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
 
 <section id="how">
   <div class="inner">
@@ -704,7 +768,7 @@ footer { border-top: 1px solid var(--border); padding: 26px 52px; display: flex;
     <li><a href="https://whop.com/quantvue-pro/quantvuesignals/" target="_blank">Join</a></li>
   </ul>
 </footer>
-<p class="footer-disclaimer">Trading involves significant risk of loss and is not suitable for all investors. Past signal performance is not indicative of future results. QuantVue provides algorithmic trade signals for educational and informational purposes only — this is not financial advice. Always conduct your own research and consult a qualified financial advisor before trading.</p>
+<p class="footer-disclaimer">Trading involves significant risk of loss and is not suitable for all investors. Past signal performance is not indicative of future results. QuantVue provides algorithmic trade signals for educational and informational purposes only — this is not financial advice. Always conduct your own research and consult a qualified financial advisor before trading. Backtested results are hypothetical and do not represent actual trading performance. Past performance — whether backtested or live — is not indicative of future results. All backtesting was conducted on third-party platforms.</p>
 
 <script>
 
